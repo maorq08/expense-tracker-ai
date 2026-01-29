@@ -26,7 +26,7 @@ import {
 import { useExpenses } from "@/context/ExpenseContext";
 import { useToast } from "@/components/Toast";
 import { formatCurrency, formatDate } from "@/lib/formatters";
-import { exportToCSV } from "@/lib/export";
+import ExportModal from "./ExportModal";
 import {
   CATEGORIES,
   SENTIMENTS,
@@ -84,6 +84,7 @@ export default function ExpenseList() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | undefined>();
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
 
   const hasActiveFilters =
     filters.search !== "" ||
@@ -185,11 +186,6 @@ export default function ExpenseList() {
     toast("Expense deleted", "info");
   }
 
-  function handleExport() {
-    exportToCSV(filtered);
-    toast("CSV exported");
-  }
-
   const filteredTotal = filtered.reduce((s, e) => s + e.amount, 0);
 
   if (!isLoaded) {
@@ -249,13 +245,13 @@ export default function ExpenseList() {
                 Add
               </button>
               <button
-                onClick={handleExport}
+                onClick={() => setExportModalOpen(true)}
                 disabled={filtered.length === 0}
                 className="flex items-center gap-1.5 bg-slate-100 text-slate-600 px-4 py-2.5 rounded-xl text-sm font-medium
                   hover:bg-slate-200 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Download className="w-4 h-4" />
-                CSV
+                Export
               </button>
             </div>
           </div>
@@ -551,6 +547,13 @@ export default function ExpenseList() {
           </div>
         </div>
       </Modal>
+
+      {/* Export modal */}
+      <ExportModal
+        open={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        expenses={filtered}
+      />
     </>
   );
 }
