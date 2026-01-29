@@ -24,6 +24,7 @@ import {
   FastForward,
 } from "lucide-react";
 import { useExpenses } from "@/context/ExpenseContext";
+import { usePet } from "@/context/PetContext";
 import { useToast } from "@/components/Toast";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import { exportToCSV } from "@/lib/export";
@@ -69,6 +70,7 @@ const SENTIMENT_STYLES: Record<Sentiment, { bg: string; text: string; icon: type
 export default function ExpenseList() {
   const { expenses, isLoaded, addExpense, updateExpense, deleteExpense } =
     useExpenses();
+  const { addTreat } = usePet();
   const { toast } = useToast();
 
   const [filters, setFilters] = useState<ExpenseFilters>({
@@ -156,6 +158,7 @@ export default function ExpenseList() {
 
   function handleAdd(data: Omit<Expense, "id" | "createdAt">) {
     addExpense(data);
+    addTreat();
     setModalOpen(false);
     toast("Expense added successfully");
   }

@@ -15,6 +15,7 @@ import {
   MapPin,
 } from "lucide-react";
 import { useExpenses } from "@/context/ExpenseContext";
+import { usePet } from "@/context/PetContext";
 import { useToast } from "@/components/Toast";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import { Category } from "@/types";
@@ -53,6 +54,7 @@ function getGreeting(): string {
 
 export default function DashboardPage() {
   const { expenses, isLoaded, addExpense, monthlySpent } = useExpenses();
+  const { addTreat } = usePet();
   const { toast } = useToast();
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -65,6 +67,7 @@ export default function DashboardPage() {
 
   function handleAdd(data: Omit<Expense, "id" | "createdAt">) {
     addExpense(data);
+    addTreat();
     setModalOpen(false);
     toast("Expense added successfully");
   }
