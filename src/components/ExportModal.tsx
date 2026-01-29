@@ -9,8 +9,13 @@ import {
   CheckSquare,
   Square,
   BarChart3,
+  Copy,
+  Mail,
+  Link2,
+  Check,
 } from "lucide-react";
 import Modal from "./Modal";
+import { useToast } from "./Toast";
 import { Expense } from "@/types";
 import {
   ExportOptions,
@@ -18,7 +23,10 @@ import {
   ALL_EXPORT_FIELDS,
   FIELD_LABELS,
   exportExpenses,
+  generateCSV,
+  generateJSON,
 } from "@/lib/export";
+import { generateShareUrl } from "@/lib/share";
 
 interface ExportModalProps {
   open: boolean;
@@ -27,13 +35,16 @@ interface ExportModalProps {
 }
 
 export default function ExportModal({ open, onClose, expenses }: ExportModalProps) {
+  const { toast } = useToast();
   const [format, setFormat] = useState<"csv" | "json">("csv");
   const [fields, setFields] = useState<ExportField[]>([...ALL_EXPORT_FIELDS]);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [includeSummary, setIncludeSummary] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
-  const filteredCount = useMemo(() => {
+  const filteredExpenses = useMemo(() => {
     let result = expenses;
     if (startDate) {
       result = result.filter((e) => e.date >= startDate);
@@ -41,8 +52,20 @@ export default function ExportModal({ open, onClose, expenses }: ExportModalProp
     if (endDate) {
       result = result.filter((e) => e.date <= endDate);
     }
-    return result.length;
+    return result;
   }, [expenses, startDate, endDate]);
+
+  const filteredCount = filteredExpenses.length;
+
+  function getExportOptions(): ExportOptions {
+    return {
+      format,
+      fields,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+      includeSummary,
+    };
+  }
 
   function toggleField(field: ExportField) {
     setFields((prev) =>
@@ -62,17 +85,59 @@ export default function ExportModal({ open, onClose, expenses }: ExportModalProp
 
   function handleExport() {
     if (fields.length === 0) return;
-
-    const options: ExportOptions = {
-      format,
-      fields,
-      startDate: startDate || undefined,
-      endDate: endDate || undefined,
-      includeSummary,
-    };
-
-    exportExpenses(expenses, options);
+    exportExpenses(expenses, getExportOptions());
     onClose();
+  }
+
+  async function handleCopyToClipboard() {
+    if (fields.length === 0) return;
+
+    const options = getExportOptions();
+    const content =
+      format === "csv"
+        ? generateCSV(filteredExpenses, options)
+        : generateJSON(filteredExpenses, options);
+
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopied(true);
+      toast("Copied to clipboard");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast("Failed to copy", "error");
+    }
+  }
+
+  function handleEmailExport() {
+    if (fields.length === 0) return;
+
+    const total = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const subject = encodeURIComponent(
+      `Expense Export - ${new Date().toLocaleDateString()}`
+    );
+    const body = encodeURIComponent(
+      `Expense Summary\n\n` +
+        `Total: $${total.toFixed(2)}\n` +
+        `Expenses: ${filteredCount}\n` +
+        `Date Range: ${startDate || "All"} to ${endDate || "All"}\n\n` +
+        `(Full ${format.toUpperCase()} data is attached or can be exported from the app)`
+    );
+
+    window.open(`mailto:?subject=${subject}&body=${body}`);
+  }
+
+  async function handleGenerateShareLink() {
+    if (filteredExpenses.length === 0) return;
+
+    try {
+      const url = await generateShareUrl(filteredExpenses);
+      await navigator.clipboard.writeText(url);
+      setLinkCopied(true);
+      toast("Share link copied to clipboard");
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch {
+      toast("Failed to generate share link", "error");
+    }
   }
 
   return (
@@ -222,6 +287,52 @@ export default function ExportModal({ open, onClose, expenses }: ExportModalProp
           </span>
         </div>
 
+        {/* Cloud actions */}
+        <div className="grid grid-cols-3 gap-2">
+          <button
+            type="button"
+            onClick={handleCopyToClipboard}
+            disabled={fields.length === 0 || filteredCount === 0}
+            className="flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl border border-slate-200 bg-slate-50
+              hover:bg-slate-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {copied ? (
+              <Check className="w-5 h-5 text-emerald-500" />
+            ) : (
+              <Copy className="w-5 h-5 text-slate-500" />
+            )}
+            <span className="text-xs font-medium text-slate-600">
+              {copied ? "Copied!" : "Copy"}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={handleEmailExport}
+            disabled={fields.length === 0 || filteredCount === 0}
+            className="flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl border border-slate-200 bg-slate-50
+              hover:bg-slate-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Mail className="w-5 h-5 text-slate-500" />
+            <span className="text-xs font-medium text-slate-600">Email</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleGenerateShareLink}
+            disabled={filteredCount === 0}
+            className="flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl border border-slate-200 bg-slate-50
+              hover:bg-slate-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {linkCopied ? (
+              <Check className="w-5 h-5 text-emerald-500" />
+            ) : (
+              <Link2 className="w-5 h-5 text-slate-500" />
+            )}
+            <span className="text-xs font-medium text-slate-600">
+              {linkCopied ? "Copied!" : "Share Link"}
+            </span>
+          </button>
+        </div>
+
         {/* Export button */}
         <button
           onClick={handleExport}
@@ -230,7 +341,7 @@ export default function ExportModal({ open, onClose, expenses }: ExportModalProp
             disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Download className="w-4 h-4" />
-          Export {format.toUpperCase()}
+          Download {format.toUpperCase()}
         </button>
       </div>
     </Modal>
