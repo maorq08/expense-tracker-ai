@@ -70,7 +70,7 @@ const SENTIMENT_STYLES: Record<Sentiment, { bg: string; text: string; icon: type
 export default function ExpenseList() {
   const { expenses, isLoaded, addExpense, updateExpense, deleteExpense } =
     useExpenses();
-  const { addTreat } = usePet();
+  const { pet, addTreat } = usePet();
   const { toast } = useToast();
 
   const [filters, setFilters] = useState<ExpenseFilters>({
@@ -161,6 +161,9 @@ export default function ExpenseList() {
     addTreat();
     setModalOpen(false);
     toast("Expense added successfully");
+    setTimeout(() => {
+      toast(`🎉 ${pet.name} earned a treat!`, "pet");
+    }, 400);
   }
 
   function handleEdit(data: Omit<Expense, "id" | "createdAt">) {

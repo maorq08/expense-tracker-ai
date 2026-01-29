@@ -7,9 +7,9 @@ import {
   useCallback,
   ReactNode,
 } from "react";
-import { CheckCircle2, XCircle, Info, X } from "lucide-react";
+import { CheckCircle2, XCircle, Info, X, Cookie } from "lucide-react";
 
-type ToastType = "success" | "error" | "info";
+type ToastType = "success" | "error" | "info" | "pet";
 
 interface Toast {
   id: number;
@@ -55,12 +55,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     success: <CheckCircle2 className="w-5 h-5 text-emerald-400" />,
     error: <XCircle className="w-5 h-5 text-red-400" />,
     info: <Info className="w-5 h-5 text-blue-400" />,
+    pet: <Cookie className="w-5 h-5 text-amber-500" />,
   };
 
   const bgColors = {
     success: "from-emerald-500/10 to-emerald-500/5 border-emerald-200/50",
     error: "from-red-500/10 to-red-500/5 border-red-200/50",
     info: "from-blue-500/10 to-blue-500/5 border-blue-200/50",
+    pet: "from-amber-500/10 to-orange-500/5 border-amber-200/50",
   };
 
   return (

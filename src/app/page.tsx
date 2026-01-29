@@ -54,7 +54,7 @@ function getGreeting(): string {
 
 export default function DashboardPage() {
   const { expenses, isLoaded, addExpense, monthlySpent } = useExpenses();
-  const { addTreat } = usePet();
+  const { pet, addTreat } = usePet();
   const { toast } = useToast();
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -70,6 +70,9 @@ export default function DashboardPage() {
     addTreat();
     setModalOpen(false);
     toast("Expense added successfully");
+    setTimeout(() => {
+      toast(`🎉 ${pet.name} earned a treat!`, "pet");
+    }, 400);
   }
 
   return (
